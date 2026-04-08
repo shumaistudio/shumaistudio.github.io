@@ -1,0 +1,2 @@
+# shumaistudio.github.io
+shumaistudiohomepage
