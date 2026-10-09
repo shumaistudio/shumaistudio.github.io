@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy – Link Hover Preview</title>
+<style>
+  :root { --bg:#f6f7fb; --card:#fff; --text:#1e293b; --muted:#64748b; --border:#e2e8f0; --accent:#4f46e5; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#14141f; --card:#1e1e2e; --text:#e5e7eb; --muted:#9ca3af; --border:#2f3045; --accent:#818cf8; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.8 system-ui,"Hiragino Sans","Yu Gothic UI",sans-serif; }
+  .wrap { max-width:780px; margin:0 auto; padding:32px 20px 60px; }
+  header h1 { margin:0 0 4px; font-size:26px; }
+  header p { margin:0; color:var(--muted); }
+  .lang { margin:18px 0 0; display:flex; gap:8px; }
+  .lang a { padding:4px 14px; border:1px solid var(--border); border-radius:999px; background:var(--card);
+            color:var(--text); text-decoration:none; font-size:13px; }
+  .lang a:hover { border-color:var(--accent); color:var(--accent); }
+  section.card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:8px 26px 22px; margin-top:24px; }
+  h2 { font-size:20px; margin:22px 0 6px; padding-bottom:6px; border-bottom:2px solid var(--accent); }
+  h3 { font-size:16px; margin:20px 0 4px; }
+  ul { padding-left:22px; margin:6px 0; }
+  li { margin:4px 0; }
+  a { color:var(--accent); }
+  .note { background:color-mix(in srgb, var(--accent) 10%, transparent); border-radius:10px; padding:10px 14px; margin:12px 0; }
+  footer { margin-top:28px; color:var(--muted); font-size:13px; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Link Hover Preview – Privacy Policy</h1>
+    <p>プライバシーポリシー / Developer: shumaistudio</p>
+    <p>Last updated / 最終更新日: 2026-10-09</p>
+    <div class="lang"><a href="#ja">日本語</a><a href="#en">English</a></div>
+  </header>
+
+  <!-- ===================== 日本語 ===================== -->
+  <section class="card" id="ja">
+    <h2>プライバシーポリシー（日本語）</h2>
+    <p>
+      shumaistudio（以下「開発者」）は、ブラウザ拡張機能「Link Hover Preview」（以下「本拡張機能」）における
+      ユーザーのプライバシーを尊重します。本ポリシーは、本拡張機能が扱う情報について説明します。
+    </p>
+
+    <div class="note">
+      <b>要点：</b>本拡張機能は、個人情報を収集・販売・送信しません。すべてのデータはお使いのブラウザ内にのみ保存され、
+      開発者や第三者のサーバーへ送信されることはありません。
+    </div>
+
+    <h3>1. 収集する情報</h3>
+    <p>開発者は、本拡張機能を通じてユーザーの個人情報や閲覧履歴を収集しません。外部の分析ツール、広告、トラッキングも使用していません。</p>
+
+    <h3>2. ブラウザ内に保存される情報</h3>
+    <ul>
+      <li>
+        <b>設定情報</b>：プレビューの大きさ、表示までの時間、表示に必要なキー、スクリプト実行の可否、URL表示、httpサイトのプレビュー、
+        キャッシュの使用可否など。ブラウザの拡張機能ストレージ（chrome.storage.sync）に保存されます。
+        ブラウザのアカウント同期を有効にしている場合は、そのブラウザの仕組みによって同期されます。
+      </li>
+      <li>
+        <b>ページのキャッシュ（任意機能・初期値はOFF）</b>：ユーザーが設定画面で明示的に有効にした場合のみ、
+        プレビューしたページ、または実際に閲覧したページのスナップショット（HTML）を、お使いの端末内
+        （chrome.storage.local）に保存します。
+        <ul>
+          <li>パスワード入力欄があるページは保存しません。</li>
+          <li>保存は最大300ページ・約150MBまでで、超えた場合は古いものから自動的に削除されます。</li>
+          <li>設定画面の「キャッシュを削除」ボタンで、いつでもすべて削除できます。</li>
+          <li>拡張機能を無効化・削除すると、保存データはブラウザにより削除されます。</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>3. プレビュー表示時の通信</h3>
+    <p>
+      リンクにマウスを乗せてプレビューを表示すると、本拡張機能はそのリンク先のページを小さなフレーム内で読み込みます。
+      このとき、リンク先のサイトとは通常のページ閲覧と同様に通信が発生します（リンク先サイトのサーバーには、IPアドレス等の通常の接続情報が伝わります）。
+      この通信は、リンク先のサイトのプライバシーポリシーに従います。
+      意図しないアクセスを避けるため、本拡張機能は初期設定で「Shiftキーを押しながらホバーしたときのみ」表示します。
+    </p>
+
+    <h3>4. 必要な権限について</h3>
+    <ul>
+      <li><b>すべてのサイトへのアクセス（ホスト権限）</b>：どのサイトのリンクでもホバーを検出し、プレビューを表示するため。</li>
+      <li><b>declarativeNetRequest</b>：リンク先ページを小さなフレームに表示できるよう、フレーム表示の応答ヘッダーを調整するため。</li>
+      <li><b>storage / unlimitedStorage</b>：設定の保存、およびオプションのキャッシュ保存のため。</li>
+    </ul>
+    <p>これらの権限を、上記の目的以外に使用することはありません。</p>
+
+    <h3>5. 第三者への提供</h3>
+    <p>開発者は、ユーザーのデータを第三者に販売、提供、共有しません。また、本拡張機能の目的と無関係な用途、および与信判断・融資目的には一切使用しません。</p>
+
+    <h3>6. 子どものプライバシー</h3>
+    <p>本拡張機能は、子どもから個人情報を収集することを意図していません。</p>
+
+    <h3>7. ポリシーの変更</h3>
+    <p>本ポリシーは、必要に応じて変更されることがあります。変更した場合は、このページの「最終更新日」を更新します。</p>
+
+    <h3>8. お問い合わせ</h3>
+    <p>本ポリシーに関するご質問は、次のメールアドレスまでご連絡ください。<br>
+      <a href="mailto:ebiotvinformation@gmail.com">ebiotvinformation@gmail.com</a></p>
+  </section>
+
+  <!-- ===================== English ===================== -->
+  <section class="card" id="en">
+    <h2>Privacy Policy (English)</h2>
+    <p>
+      shumaistudio ("the Developer") respects your privacy. This policy explains what information the browser extension
+      "Link Hover Preview" ("the Extension") handles.
+    </p>
+
+    <div class="note">
+      <b>Summary:</b> The Extension does not collect, sell, or transmit any personal data. All data stays in your browser and is never
+      sent to the Developer or to any third party.
+    </div>
+
+    <h3>1. Information we collect</h3>
+    <p>The Developer does not collect personal information or browsing history through the Extension. The Extension uses no analytics, advertising, or tracking services.</p>
+
+    <h3>2. Information stored in your browser</h3>
+    <ul>
+      <li>
+        <b>Settings</b>: preview size, hover delay, trigger key, script execution on/off, URL display, HTTP preview, and cache on/off.
+        These are stored in the browser's extension storage (chrome.storage.sync). If you have browser account sync enabled, they may be synced by the browser itself.
+      </li>
+      <li>
+        <b>Page cache (optional, OFF by default)</b>: only if you explicitly enable it in the settings page, snapshots (HTML) of pages you preview or visit are stored
+        locally on your device (chrome.storage.local).
+        <ul>
+          <li>Pages that contain password fields are not saved.</li>
+          <li>The cache is limited to 300 pages / about 150 MB; the oldest entries are removed automatically.</li>
+          <li>You can delete all cached data at any time with the "Delete cache" button in the settings page.</li>
+          <li>Disabling or uninstalling the Extension lets the browser remove the stored data.</li>
+        </ul>
+      </li>
+    </ul>
+
+    <h3>3. Network activity when previewing</h3>
+    <p>
+      When you hover over a link and a preview is shown, the Extension loads the linked page in a small frame. This causes a connection to the linked website,
+      just like a normal visit (the website's server receives ordinary connection information such as your IP address). That connection is governed by the privacy policy of
+      the linked website. To avoid unintended requests, the Extension by default shows a preview only while the Shift key is held during hover.
+    </p>
+
+    <h3>4. Permissions</h3>
+    <ul>
+      <li><b>Access to all sites (host permissions)</b>: to detect link hovers and display previews on any website.</li>
+      <li><b>declarativeNetRequest</b>: to adjust framing-related response headers so the linked page can be displayed in the small preview frame.</li>
+      <li><b>storage / unlimitedStorage</b>: to save your settings and the optional cache.</li>
+    </ul>
+    <p>These permissions are not used for any purpose other than those stated above.</p>
+
+    <h3>5. Sharing with third parties</h3>
+    <p>The Developer does not sell, transfer, or share user data with third parties. User data is never used for purposes unrelated to the Extension's single purpose, nor to determine creditworthiness or for lending purposes.</p>
+
+    <h3>6. Children's privacy</h3>
+    <p>The Extension is not intended to collect personal information from children.</p>
+
+    <h3>7. Changes to this policy</h3>
+    <p>This policy may be updated from time to time. When it changes, the "Last updated" date at the top of this page will be revised.</p>
+
+    <h3>8. Contact</h3>
+    <p>If you have any questions about this policy, please contact:<br>
+      <a href="mailto:ebiotvinformation@gmail.com">ebiotvinformation@gmail.com</a></p>
+  </section>
+
+  <footer>&copy; 2026 shumaistudio</footer>
+</div>
+</body>
+</html>
