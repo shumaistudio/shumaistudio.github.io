@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pollinations AI チャット</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", Arial, sans-serif; background: #f4f4f9; color: #222; display: flex; }
+
+  #sidebar { width: 260px; background: #1f2430; color: #eee; display: flex; flex-direction: column; flex-shrink: 0; transition: margin-left .2s; }
+  #new-chat { margin: 12px; padding: 10px; background: #007bff; color: #fff; border: 0; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  #new-chat:hover { background: #0056b3; }
+  #chat-list { flex: 1; overflow-y: auto; padding: 0 8px 8px; }
+  .chat-item { display: flex; align-items: center; gap: 4px; padding: 9px 10px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  .chat-item:hover { background: #2d3446; }
+  .chat-item.active { background: #3a4460; }
+  .chat-item .title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chat-item button { background: none; border: 0; color: #aab; cursor: pointer; font-size: 14px; padding: 2px 5px; border-radius: 4px; }
+  .chat-item button:hover { background: #4a5575; color: #fff; }
+
+  #main { flex: 1; display: flex; flex-direction: column; min-width: 0; padding: 12px; align-items: center; }
+  #topbar { width: 100%; max-width: 760px; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  #toggle-sidebar { display: none; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+  #chat-title { flex: 1; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #model { max-width: 190px; border: 1px solid #ddd; border-radius: 6px; padding: 6px; background: #fff; font-size: 13px; }
+
+  #chat-container { width: 100%; max-width: 760px; flex: 1; min-height: 0; background: #fff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,.1); display: flex; flex-direction: column; overflow: hidden; }
+  #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
+  .message { margin-bottom: 14px; padding: 10px 15px; border-radius: 15px; max-width: 85%; word-wrap: break-word; white-space: pre-wrap; line-height: 1.55; }
+  .user-message { background: #007bff; color: #fff; align-self: flex-end; }
+  .ai-message { background: #e9ecef; color: #333; align-self: flex-start; }
+  .ai-message img { display: block; max-width: 100%; border-radius: 8px; margin-top: 6px; background: #ccc; min-height: 120px; }
+  .ai-message .img-actions { margin-top: 6px; font-size: 13px; }
+  .ai-message .img-actions a, .ai-message .img-actions button { color: #0056b3; background: none; border: 0; cursor: pointer; padding: 0 8px 0 0; font-size: 13px; text-decoration: underline; }
+
+  #input-container { display: flex; gap: 8px; padding: 10px; border-top: 1px solid #ddd; }
+  #mode { border: 1px solid #ddd; border-radius: 4px; padding: 0 6px; background: #fff; }
+  #user-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; outline: none; font-size: 15px; }
+  #send-btn { background: #007bff; color: #fff; border: 0; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+  #send-btn:hover { background: #0056b3; }
+  #send-btn:disabled { background: #aaa; }
+
+  @media (max-width: 700px) {
+    #sidebar { position: fixed; z-index: 10; height: 100%; margin-left: -260px; }
+    #sidebar.open { margin-left: 0; }
+    #toggle-sidebar { display: inline-block; }
+  }
+</style>
+</head>
+<body>
+
+<aside id="sidebar">
+  <button id="new-chat">＋ 新しいチャット</button>
+  <div id="chat-list"></div>
+</aside>
+
+<div id="main">
+  <div id="topbar">
+    <button id="toggle-sidebar">☰</button>
+    <div id="chat-title"></div>
+    <select id="model" title="AIモデル"><option value="openai">openai</option></select>
+  </div>
+  <div id="chat-container">
+    <div id="chat-box"></div>
+    <div id="input-container">
+      <select id="mode">
+        <option value="chat">💬 チャット</option>
+        <option value="image">🎨 画像生成</option>
+      </select>
+      <input type="text" id="user-input" placeholder="メッセージを入力してください..." autocomplete="off">
+      <button id="send-btn">送信</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORE_KEY = 'pollinations_chats_v1';
+const CURRENT_KEY = 'pollinations_current_v1';
+const MAX_HISTORY = 20;           // APIに送る直近メッセージ数
+const GREETING = 'こんにちは！何かお手伝いできることはありますか？\n（左下のメニューで「🎨 画像生成」に切り替えると、説明文から画像を作れます）';
+
+// 全角混入を防ぐため、URLはASCIIコードから組み立てる
+const TEXT_API = String.fromCharCode(104,116,116,112,115,58,47,47) + 'text.pollinations.ai/openai';
+const IMAGE_API = String.fromCharCode(104,116,116,112,115,58,47,47) + 'image.pollinations.ai/prompt/';
+
+const chatBox = document.getElementById('chat-box');
+const userInput = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+const modeSel = document.getElementById('mode');
+const chatList = document.getElementById('chat-list');
+const chatTitle = document.getElementById('chat-title');
+const sidebar = document.getElementById('sidebar');
+const modelSel = document.getElementById('model');
+const MODEL_KEY = 'pollinations_model_v1';
+const MODELS_API = TEXT_API.replace(/openai$/, 'models');
+const FALLBACK_MODELS = ['openai', 'mistral', 'qwen-coder'];
+let abortCtl = null;
+
+let chats = [];      // {id, title, messages:[{role, type:'text'|'image', content, url?}], updated}
+let currentId = null;
+
+/* ---------- 保存 / 読み込み ---------- */
+function load() {
+  try { chats = JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch { chats = []; }
+  try { currentId = localStorage.getItem(CURRENT_KEY); } catch { currentId = null; }
+}
+function save() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(chats));
+    localStorage.setItem(CURRENT_KEY, currentId || '');
+  } catch (e) { console.error('保存に失敗しました', e); }
+}
+function current() { return chats.find(c => c.id === currentId); }
+
+function newChat() {
+  // 空の新規チャットがすでにあれば再利用
+  const empty = chats.find(c => c.messages.length === 0);
+  if (empty) { openChat(empty.id); return; }
+  const c = { id: 'c' + Date.now(), title: '新しいチャット', messages: [], updated: Date.now() };
+  chats.unshift(c);
+  openChat(c.id);
+}
+function openChat(id) {
+  currentId = id;
+  save();
+  renderList();
+  renderChat();
+  sidebar.classList.remove('open');
+  userInput.focus();
+}
+function deleteChat(id) {
+  const c = chats.find(x => x.id === id);
+  if (!c || !confirm(`「${c.title}」を削除しますか？`)) return;
+  chats = chats.filter(x => x.id !== id);
+  if (currentId === id) currentId = chats[0] ? chats[0].id : null;
+  if (!currentId) { newChat(); return; }
+  save(); renderList(); renderChat();
+}
+function renameChat(id) {
+  const c = chats.find(x => x.id === id);
+  const name = c && prompt('チャット名を変更', c.title);
+  if (name && name.trim()) { c.title = name.trim(); save(); renderList(); renderChat(); }
+}
+
+/* ---------- 描画 ---------- */
+function renderList() {
+  chatList.textContent = '';
+  [...chats].sort((a, b) => b.updated - a.updated).forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'chat-item' + (c.id === currentId ? ' active' : '');
+    const t = document.createElement('span');
+    t.className = 'title'; t.textContent = c.title;
+    const ren = document.createElement('button'); ren.textContent = '✏️'; ren.title = '名前を変更';
+    ren.onclick = e => { e.stopPropagation(); renameChat(c.id); };
+    const del = document.createElement('button'); del.textContent = '🗑'; del.title = '削除';
+    del.onclick = e => { e.stopPropagation(); deleteChat(c.id); };
+    row.append(t, ren, del);
+    row.onclick = () => openChat(c.id);
+    chatList.appendChild(row);
+  });
+}
+function renderChat() {
+  const c = current();
+  chatTitle.textContent = c ? c.title : '';
+  chatBox.textContent = '';
+  addBubble('ai-message', GREETING);
+  if (c) c.messages.forEach(m => renderMessage(m));
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+function addBubble(cls, text) {
+  const d = document.createElement('div');
+  d.className = 'message ' + cls;
+  d.textContent = text;
+  chatBox.appendChild(d);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  return d;
+}
+function renderMessage(m) {
+  if (m.role === 'user') return addBubble('user-message', m.type === 'image' ? '🎨 ' + m.content : m.content);
+  if (m.type === 'image') return renderImage(m);
+  return addBubble('ai-message', m.content);
+}
+function renderImage(m, bubble) {
+  const d = bubble || addBubble('ai-message', '');
+  d.textContent = '';
+  const cap = document.createElement('div');
+  cap.textContent = '画像を生成しました：' + m.content;
+  const img = document.createElement('img');
+  img.alt = m.content;
+  img.src = m.url;
+  img.onload = () => { chatBox.scrollTop = chatBox.scrollHeight; };
+  img.onerror = () => { img.remove(); cap.textContent = '画像の読み込みに失敗しました。再生成してみてください。'; };
+  const act = document.createElement('div');
+  act.className = 'img-actions';
+  const open = document.createElement('a');
+  open.href = m.url; open.target = '_blank'; open.rel = 'noopener'; open.textContent = '大きく表示';
+  const regen = document.createElement('button');
+  regen.textContent = '再生成';
+  regen.onclick = () => generateImage(m.content);
+  act.append(open, regen);
+  d.append(cap, img, act);
+  return d;
+}
+
+/* ---------- API ---------- */
+function buildApiMessages(c) {
+  // 画像メッセージは文脈用のテキストに置き換えて、直近N件を送る
+  const msgs = c.messages.slice(-MAX_HISTORY).map(m => ({
+    role: m.role,
+    content: m.type === 'image'
+      ? (m.role === 'user' ? `（画像生成を依頼: ${m.content}）` : `（画像「${m.content}」を生成して表示しました）`)
+      : m.content
+  }));
+  return [{ role: 'system', content: 'あなたは親切なアシスタントです。ユーザーの言語で簡潔に答えてください。' }, ...msgs];
+}
+// ストリーミングで取得し、届くたびに onDelta(これまでの全文) を呼ぶ
+async function askText(c, onDelta) {
+  abortCtl = new AbortController();
+  let full = '';
+  try {
+    const res = await fetch(TEXT_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: abortCtl.signal,
+      body: JSON.stringify({ model: modelSel.value, messages: buildApiMessages(c), stream: true })
+    });
+    if (!res.ok) throw new Error('通信エラー: ' + res.status);
+
+    const isSSE = (res.headers.get('content-type') || '').includes('event-stream');
+    if (!res.body || !isSSE) {              // ストリーミング非対応時は一括表示
+      const data = await res.json();
+      full = (data.choices && data.choices[0] && data.choices[0].message.content) || '';
+      onDelta(full);
+      return full;
+    }
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        const s = line.trim();
+        if (!s.startsWith('data:')) continue;
+        const payload = s.slice(5).trim();
+        if (payload === '[DONE]') continue;
+        try {
+          const j = JSON.parse(payload);
+          const d = j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content;
+          if (d) { full += d; onDelta(full); }
+        } catch { /* 途中の不完全な行は無視 */ }
+      }
+    }
+    return full;
+  } catch (e) {
+    if (e.name === 'AbortError') return full;   // 停止ボタン：途中までの内容を返す
+    throw e;
+  }
+}
+
+async function initModels() {
+  let names = FALLBACK_MODELS;
+  try {
+    const r = await fetch(MODELS_API);
+    if (r.ok) {
+      const list = await r.json();
+      const got = list
+        .filter(m => typeof m === 'string' || !m.output_modalities || m.output_modalities.includes('text'))
+        .map(m => typeof m === 'string' ? m : m.name)
+        .filter(n => n && !/audio|tts|whisper/i.test(n));
+      if (got.length) names = got;
+    }
+  } catch (e) { console.warn('モデル一覧の取得に失敗。既定の一覧を使います', e); }
+  let saved = null;
+  try { saved = localStorage.getItem(MODEL_KEY); } catch {}
+  modelSel.textContent = '';
+  names.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; modelSel.appendChild(o); });
+  modelSel.value = names.includes(saved) ? saved : names[0];
+}
+modelSel.addEventListener('change', () => { try { localStorage.setItem(MODEL_KEY, modelSel.value); } catch {} });
+function makeImageUrl(prompt) {
+  const seed = Math.floor(Math.random() * 1e9);
+  return IMAGE_API + encodeURIComponent(prompt) + `?width=1024&height=1024&nologo=true&seed=${seed}`;
+}
+
+/* ---------- 送信処理 ---------- */
+function setBusy(b) { sendBtn.disabled = b; userInput.disabled = b; modeSel.disabled = b; if (!b) userInput.focus(); }
+
+function touch(c, firstText) {
+  c.updated = Date.now();
+  if (c.title === '新しいチャット' && firstText) c.title = firstText.slice(0, 24);
+  save(); renderList(); chatTitle.textContent = c.title;
+}
+
+async function generateImage(prompt) {
+  const c = current();
+  setBusy(true);
+  try {
+    c.messages.push({ role: 'user', type: 'image', content: prompt });
+    addBubble('user-message', '🎨 ' + prompt);
+    const bubble = addBubble('ai-message', '画像を生成中...（数十秒かかることがあります）');
+    const m = { role: 'assistant', type: 'image', content: prompt, url: makeImageUrl(prompt) };
+    c.messages.push(m);
+    touch(c, prompt);
+    renderImage(m, bubble);
+  } finally { setBusy(false); }
+}
+
+async function sendMessage() {
+  if (abortCtl) { abortCtl.abort(); return; }   // 応答中に押すと停止
+  const text = userInput.value.trim();
+  if (!text) return;
+  if (!current()) newChat();
+  const c = current();
+  userInput.value = '';
+
+  // 「/image 〜」でも画像生成できる
+  if (modeSel.value === 'image' || text.startsWith('/image ')) {
+    return generateImage(text.replace(/^\/image\s+/, ''));
+  }
+
+  c.messages.push({ role: 'user', type: 'text', content: text });
+  addBubble('user-message', text);
+  touch(c, text);
+  const loading = addBubble('ai-message', '考え中...');
+  setBusy(true);
+  sendBtn.disabled = false;       // 応答中は「停止」ボタンとして使う
+  sendBtn.textContent = '停止';
+  try {
+    const reply = await askText(c, text => {
+      loading.textContent = text;
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+    if (reply) {
+      c.messages.push({ role: 'assistant', type: 'text', content: reply });
+    } else {
+      // 何も受け取れなかった場合は発言ごと取り消す
+      loading.remove();
+      c.messages.pop();
+    }
+    touch(c);
+  } catch (err) {
+    loading.textContent = 'エラーが発生しました。もう一度お試しください。';
+    console.error(err);
+    // 失敗した発言を履歴から外して整合性を保つ
+    c.messages.pop(); save();
+  } finally {
+    abortCtl = null;
+    sendBtn.textContent = '送信';
+    setBusy(false);
+  }
+}
+
+/* ---------- 初期化 ---------- */
+document.getElementById('new-chat').onclick = newChat;
+document.getElementById('toggle-sidebar').onclick = () => sidebar.classList.toggle('open');
+sendBtn.addEventListener('click', sendMessage);
+userInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) sendMessage(); });
+
+initModels();
+load();
+if (!chats.length) newChat();
+else openChat(chats.find(c => c.id === currentId) ? currentId : chats[0].id);
+</script>
+</body>
+</html>
